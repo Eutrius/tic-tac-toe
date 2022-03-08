@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/style.css">
+        <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand+SC&display=swap" rel="stylesheet">
+        <title>Tic-Tac-Toe</title>
+    </head>
+    <body>
+       <div id="container">
+           <div id="menu">
+                <p id="title">Tic-Tac-Toe</p>
+                <p id="choose">Choose Your Opponent:</p>
+                <div id="btn-container">
+                    <button type="button" id="choose-player" class="btn enemies">Player</button>
+                    <button type="button" id="choose-bot" class="btn enemies">AI</button>
+                    <button type="button" class="btn difficulty">Easy</button>
+                    <button type="button" class="btn difficulty">Normal</button>
+                    <button type="button" class="btn difficulty">Hard</button>
+                    <button type="button" class="btn mark">X</button>
+                    <button type="button" class="btn mark">O</button>
+                </div>
+                <footer>
+                    <p>The Odin Project: Tic-Tac-Toe | <a href="https://eutrius.github.io">© Eutrius</a> <script>document.write(new Date().getFullYear())</script></p>
+                </footer>
+           </div>
+           <div id="game">
+               <div id="player-x" class="player">
+                   <p>X</p>
+               </div>
+               <div id="board">
+                   <div>X</div>
+                   <div>O</div>
+                   <div>X</div>
+                   <div>X</div>
+                   <div>O</div>
+                   <div>O</div>
+                   <div></div>
+                   <div></div>
+                   <div></div>
+               </div>
+               <div id="player-o" class="player">
+                   <p>O</p>
+               </div>
+           </div>
+           <div id="drop-down-menu">
+                <p id="game-result">It's a Draw</p>
+                <button type="button" id="play-again" class="small-btn">Play again</button>
+                <button type="button" id="back-to-menu" class="small-btn">Back to Menu</button>
+           </div>
+
+       </div> 
+       <script src="main.js"></script>
+    </body>
+</html>
