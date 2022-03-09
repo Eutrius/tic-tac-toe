@@ -149,7 +149,7 @@ footer {
     height: 17rem;
     padding: 1rem;
 
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
