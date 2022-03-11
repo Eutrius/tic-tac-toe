@@ -31,11 +31,17 @@ const gameBoard = (() => {
 
     const markCell = (index, mark) => {
         boardCells[index].getMark(mark);
-        console.log(boardCells[index])
     }
 
     const isMarked = (index) => {
         return boardCells[index].isMarked();
+    }
+
+    const isFull = () => {
+        for (let cell of boardCells) {
+            if (!cell.isMarked()) return false;
+        }
+        return true;
     }
 
     const cell = (id) => {
@@ -63,7 +69,7 @@ const gameBoard = (() => {
 
 
 
-    return {element, init, reset,markCell,isMarked};
+    return {element, init, reset,markCell,isMarked,isFull};
 })();
 
 
@@ -71,23 +77,45 @@ const gameBoard = (() => {
 
 const player = (mark) => {
     let markedCell = [];
+    let element = document.getElementById(mark);
 
     const pushCell = (cellIndex) => {
         markedCell.push(cellIndex);
     }
 
-    return {markedCell,mark,pushCell};
+    const toPlay = () => {
+        element.classList.add("playing");
+    }
+
+    const toWait = () => {
+        element.classList.remove("playing");
+    }
+
+    const win = (winCondition) => {
+        for (let combination of winCondition) {
+            let winnable = true;
+            for (let index of combination) {
+                if (!markedCell.includes(index)) winnable = false;
+            }
+            if (!winnable) continue;
+            return true;
+        }
+        return false;
+    }
+
+    return {mark,pushCell,toPlay,toWait,win};
 }
 
 
 
 const gameManager = (() => {
     gameBoard.init();
+    const winCondition = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const playerX = player("X");
     const playerO = player("O");
 
     let currPlayer = playerX;
-
+    playerX.toPlay();
 
     const play = (e) => {
         if (!e.target.classList.contains("cell")) return;
@@ -95,12 +123,31 @@ const gameManager = (() => {
         if (gameBoard.isMarked(index)) return;
         gameBoard.markCell(index,currPlayer.mark);
         currPlayer.pushCell(index);
-        console.log(currPlayer.markedCell);
+        checkBoard();
         playerChange();
     }
 
     const playerChange = () => {
-        currPlayer = currPlayer == playerX ? playerO : playerX;
+        
+        if(currPlayer == playerX) {
+            currPlayer = playerO;
+            playerX.toWait();
+            playerO.toPlay();
+        } else {
+            currPlayer = playerX;
+            playerO.toWait();
+            playerX.toPlay();
+        }
+    }
+
+    const checkBoard = () => {
+        if (currPlayer.win(winCondition)) {
+            playerWon(currPlayer);
+        };
+        if (gameBoard.isFull()) {
+            gameDraw();
+        }
+
     }
 
 

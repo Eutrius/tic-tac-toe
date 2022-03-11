@@ -102,7 +102,7 @@ footer {
     background-color: rgb(221, 230, 218);
 }
 
-#player-x {
+.playing {
     background-color: lightgreen;
 }
 
