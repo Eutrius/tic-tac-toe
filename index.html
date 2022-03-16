@@ -12,15 +12,15 @@
        <div id="container">
            <div id="menu">
                 <p id="title">Tic-Tac-Toe</p>
-                <p id="choose">Choose Your Opponent:</p>
+                <p id="menu-label">Choose Your Opponent:</p>
                 <div id="btn-container">
-                    <button type="button" id=player" class="btn enemies">Player</button>
-                    <button type="button" id="bot" class="btn enemies">AI</button>
-                    <button type="button" class="btn difficulty">Easy</button>
-                    <button type="button" class="btn difficulty">Normal</button>
-                    <button type="button" class="btn difficulty">Hard</button>
-                    <button type="button" class="btn mark">X</button>
-                    <button type="button" class="btn mark">O</button>
+                    <button type="button" id="player" class="btn opponent">Player</button>
+                    <button type="button" id="bot" class="btn opponent">AI</button>
+                    <button type="button" class="btn hidden difficulty">Easy</button>
+                    <button type="button" class="btn hidden difficulty">Normal</button>
+                    <button type="button" class="btn hidden difficulty">Hard</button>
+                    <button type="button" class="btn hidden mark">X</button>
+                    <button type="button" class="btn hidden mark">O</button>
                 </div>
                 <footer>
                     <p>The Odin Project: Tic-Tac-Toe | <a href="https://eutrius.github.io">© Eutrius</a> <script>document.write(new Date().getFullYear())</script></p>
@@ -36,10 +36,10 @@
                    <p>O</p>
                </div>
            </div>
-           <div id="drop-down-menu">
-                <p id="game-result">It's a Draw</p>
-                <button type="button" id="play-again" class="small-btn">Play again</button>
-                <button type="button" id="back-to-menu" class="small-btn">Back to Menu</button>
+           <div id="modal">
+                <div id="game-result"></div>
+                <button type="button" id="play-again" class="modal-btn">Play again</button>
+                <button type="button" id="back-to-menu" class="modal-btn">Back to Menu</button>
            </div>
 
        </div> 

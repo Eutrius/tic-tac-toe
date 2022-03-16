@@ -1,101 +1,198 @@
+const opponentBtns = document.getElementsByClassName("opponent");
+const difficultyBtns = document.getElementsByClassName("difficulty");
+const markBtns = document.getElementsByClassName("mark");
+const modalBtns = document.getElementsByClassName("modal-btn");
+const menuLabel = document.getElementById("menu-label");
 
-
-function clicked(e) {
-    console.log(e.target.className);
+for (let btn of opponentBtns) {
+    btn.addEventListener("click", opponentChosen);
 }
 
-function OpponentChosen(e) {
-    let opponent = e.target.id;
-    if (opponent == "player") {
-        gameManager.startGame()
-    } 
+for (let btn of difficultyBtns) {
+    btn.addEventListener("click", setBotDifficulty);
 }
 
-const gameBoard = (() => {
-    let boardCells = [];
-    let element = document.getElementById("board");
+for (let btn of markBtns) {
+    btn.addEventListener("click", markChosen);
+}
 
-    const init = () => {
-        for (let i = 0; i < 9; i++) {
-            let tempCell = cell(i);
-            boardCells.push(tempCell);
-            element.appendChild(tempCell.element);
-        }
+for (let btn of modalBtns) { 
+    btn.addEventListener("click", playAgain);
+}
+
+function playAgain(e) {
+    if(e.target.id == "play-again") {
+        gameManager.resetGame();
+        modal.hideModal();
+    } else {
+        gameManager.endGame();
+        modal.hideModal();
+        chooseOpponent();
+    }
+}
+
+function chooseOpponent() {
+    menuLabel.textContent = "Choose Your Opponent:";
+    showBtns(opponentBtns);
+}
+
+function chooseBotDifficulty() {
+    menuLabel.textContent = "Set Bot Difficulty:";
+    showBtns(difficultyBtns);
+}
+
+function chooseMark() {
+    menuLabel.textContent = "Choose Your Mark:";
+    showBtns(markBtns);
+}
+
+function markChosen(e) {
+    hideBtns(markBtns);
+    let mark = e.target.id
+    let player = player(mark);
+    if (mark == 'X') {
+        bot.setMark('O');
+        gameManager.setPlayers(player,bot);
+    } else {
+        bot.setMark('X')
+        gameManager.setPlayers(bot,player);
+    }
+    gameManager.startGame();
+}
+
+
+function setBotDifficulty(e) {
+    hideBtns(difficultyBtns);
+    bot.setDifficulty(e.target.id);
+    chooseMark();
+}
+
+function opponentChosen(e) {
+    hideBtns(opponentBtns);
+    if (e.target.id == "player") {
+        let playerX = player('X');
+        let playerO = player('O');
+        gameManager.setPlayers(playerX,playerO);
+        gameManager.startGame();
+        return;
+    }
+    chooseBotDifficulty();
+}
+
+const bot = (() => {
+
+})();
+
+const cell = (id) => {
+    let _marked = false;
+    let _element = document.createElement("div");
+    _element.id = `${id}`;
+    _element.className = "cell";
+
+    const getElement = () => {
+        return _element;
+    }
+
+    const setMarked = (mark) => {
+        _marked = true;
+        _element.textContent = mark;
     }
 
     const reset = () => {
-        for (let cell of boardCells) {
+        _marked = false;
+        _element.textContent = '';
+    }
+
+    const isMarked = () => {
+        return _marked;
+    }
+    return {getElement,setMarked,reset,isMarked};
+};
+
+
+const gameBoard = (() => {
+    let _boardCells = [];
+    let _element = document.getElementById("board");
+
+    for (let i = 0; i < 9; i++) {
+        let tempCell = cell(i);
+        _boardCells.push(tempCell);
+        _element.appendChild(tempCell.getElement());
+    }
+
+    const reset = () => {
+        for (let cell of _boardCells) {
             cell.reset();
         }
     }
 
     const markCell = (index, mark) => {
-        boardCells[index].getMark(mark);
+        _boardCells[index].setMarked(mark);
     }
 
-    const isMarked = (index) => {
-        return boardCells[index].isMarked();
+    const isMarkedAt = (index) => {
+        return _boardCells[index].isMarked();
     }
 
-    const isFull = () => {
-        for (let cell of boardCells) {
+    const isFullyMarked = () => {
+        for (let cell of _boardCells) {
             if (!cell.isMarked()) return false;
         }
         return true;
     }
 
-    const cell = (id) => {
-        let marked = false;
-        let element = document.createElement("div");
-        element.id = `${id}`;
-        element.className = "cell";
+    return {reset,markCell,isMarkedAt,isFullyMarked};
+})();
 
-        const getMark = (mark) => {
-            marked = true;
-            element.textContent = mark;
-        }
+const modal = (() => {
+    _element = document.getElementById("modal");
 
-        const reset = () => {
-            marked = false;
-            element.textContent = '';
-        }
+    const showModal = () => {
+        _element.style.display = "grid";
+    }
 
-        const isMarked = () => {
-            return marked;
-        }
-        return {id,element,getMark,reset,isMarked};
-    } 
-    
+    const hideModal = () => {
+        display('');
+        _element.style.display = "none";
+    }
 
+    const display = (string) => {
+        _element.firstElementChild.textContent = string;
+    }
 
+    return{showModal,hideModal,display}
 
-    return {element, init, reset,markCell,isMarked,isFull};
 })();
 
 
 
 
 const player = (mark) => {
-    let markedCell = [];
-    let element = document.getElementById(mark);
+    let _markedCells = [];
+    let _element = document.getElementById(mark);
 
     const pushCell = (cellIndex) => {
-        markedCell.push(cellIndex);
+        _markedCells.push(cellIndex);
+    }
+
+    const reset = () => {
+        _markedCells = [];
+        toWait();
     }
 
     const toPlay = () => {
-        element.classList.add("playing");
+        _element.classList.add("playing");
     }
 
     const toWait = () => {
-        element.classList.remove("playing");
+        _element.classList.remove("playing");
     }
 
-    const win = (winCondition) => {
-        for (let combination of winCondition) {
+    const isWinner = (winConditions) => {
+        for (let combination of winConditions) {
             let winnable = true;
             for (let index of combination) {
-                if (!markedCell.includes(index)) winnable = false;
+                if (!_markedCells.includes(index)) winnable = false;
             }
             if (!winnable) continue;
             return true;
@@ -103,53 +200,83 @@ const player = (mark) => {
         return false;
     }
 
-    return {mark,pushCell,toPlay,toWait,win};
+    return {mark,pushCell,reset,toPlay,toWait,isWinner};
 }
 
+function showBtns(arrayOfBtns) {
+    for (let btn of arrayOfBtns) {
+        btn.classList.remove("hidden");
+    }
+}
 
+function hideBtns(arrayOfBtns) {
+    for (let btn of arrayOfBtns) {
+        btn.classList.add("hidden");
+    }
+}
 
-const gameManager = (() => {
-    gameBoard.init();
-    const winCondition = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    const playerX = player("X");
-    const playerO = player("O");
+const gameManager = ((gameBoard,modal) => {
+    const _winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const _element = document.getElementById("game");
+    let _playerX;
+    let _playerO;
+    let _currPlayer;
 
-    let currPlayer = playerX;
-    playerX.toPlay();
+    const setPlayers = (x,o) => {
+        _playerX = x;
+        _playerO = o;
+    }
+
+    const startGame = () => {
+        _element.style.zIndex = 1;
+        _currPlayer = _playerX;
+        _currPlayer.toPlay();
+    }
+
+    const resetGame = () => {
+        gameBoard.reset();
+        _playerX.reset();
+        _playerO.reset();
+        _currPlayer = _playerX;
+        _currPlayer.toPlay();
+    }
+
+    const endGame = () => {
+        resetGame();
+        _element.style.zIndex = -1;
+    }
 
     const play = (e) => {
         if (!e.target.classList.contains("cell")) return;
+
         let index = parseInt(e.target.id);
-        if (gameBoard.isMarked(index)) return;
-        gameBoard.markCell(index,currPlayer.mark);
-        currPlayer.pushCell(index);
-        checkBoard();
+        if (gameBoard.isMarkedAt(index)) return;
+
+        gameBoard.markCell(index,_currPlayer.mark);
+        _currPlayer.pushCell(index);
+        if(checkBoard()) return;
         playerChange();
     }
 
     const playerChange = () => {
-        
-        if(currPlayer == playerX) {
-            currPlayer = playerO;
-            playerX.toWait();
-            playerO.toPlay();
-        } else {
-            currPlayer = playerX;
-            playerO.toWait();
-            playerX.toPlay();
-        }
+        _currPlayer.toWait();
+        _currPlayer = _currPlayer == _playerX ? _playerO : _playerX;
+        _currPlayer.toPlay();
     }
 
     const checkBoard = () => {
-        if (currPlayer.win(winCondition)) {
-            playerWon(currPlayer);
+        if (_currPlayer.isWinner(_winConditions)) {
+            modal.showModal();
+            modal.display(`Player ${_currPlayer.mark} Won!`);
+            return true;
         };
-        if (gameBoard.isFull()) {
-            gameDraw();
+        if (gameBoard.isFullyMarked()) {
+            modal.showModal();
+            modal.display("It's a Draw!");
+            return true;
         }
-
+        return false;
     }
-
-
-    gameBoard.element.addEventListener("click", play);
-})();
+    _element.addEventListener("click", play);
+    return {setPlayers,startGame,resetGame,endGame}
+})(gameBoard,modal);

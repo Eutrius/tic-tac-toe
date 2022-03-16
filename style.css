@@ -21,7 +21,7 @@ p {
 
 #menu {
     width: inherit;
-    display: none;
+    display: flex;
     gap: 2rem;
     flex-direction: column;
     align-items: center;
@@ -31,7 +31,7 @@ p {
     font-size: 8rem;
 }
 
-#choose {
+#menu-label {
     font-size: 2rem;
 }
 
@@ -44,18 +44,17 @@ p {
     cursor: pointer;
 }
 
+.hidden {
+    display: none;
+}
+
 .btn:hover, .small-btn:hover {
     transform: scale(1.1);
 }
 
 .mark {
-    display: none;
     color: rgba(0, 0, 0, 0.584);
     font-size: 7rem;
-}
-
-.difficulty {
-    display: none;
 }
 
 #btn-container {
@@ -79,6 +78,12 @@ footer {
     box-sizing: border-box;
     width: inherit;
     height: inherit;
+
+    position: absolute;
+    background-color: inherit;
+    top: 0;
+    left: 0;
+    z-index: -1;
 
     padding: 0 5rem;
 
@@ -112,7 +117,9 @@ footer {
 }
 
 #board {
-    height: 35rem;
+    min-height: 35rem;
+    max-height: 35rem;
+    min-width: 35rem;
     max-width: 35rem;
     flex: 4 1 0%;
 
@@ -141,18 +148,18 @@ footer {
 }
 
 
-#drop-down-menu {
+#modal {
     position: absolute;
     top: calc(50% - 10rem);
-    left: calc(50% - 10rem);
-    width: 20rem;
-    height: 17rem;
+    left: calc(50% - 13rem);
+    width: 26rem;
+    height: 15rem;
     padding: 1rem;
 
+    z-index: 10;
     display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 5fr 1fr;
    
     background-color: lightcyan;
     box-shadow: 0.1rem 0.1rem 0.5rem 0.1rem grey;
@@ -160,18 +167,24 @@ footer {
 }
 
 #game-result {
+    grid-area: 1/1/2/3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 4rem;
     margin-bottom: 2rem;
 
 }
 
-.small-btn {
+.modal-btn {
     font-size: 1.1rem;
     width: 10rem;
     height: 3rem;
+    justify-self: center;
     
     cursor: pointer;;
     border-radius: 1rem;
+    border-width: 0.1rem;
 }
 
 a {
