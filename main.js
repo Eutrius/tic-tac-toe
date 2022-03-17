@@ -4,20 +4,22 @@ const markBtns = document.getElementsByClassName("mark");
 const modalBtns = document.getElementsByClassName("modal-btn");
 const menuLabel = document.getElementById("menu-label");
 
-for (let btn of opponentBtns) {
-    btn.addEventListener("click", opponentChosen);
-}
+{// Buttons Events
+    for (let btn of opponentBtns) {
+        btn.addEventListener("click", opponentChosen);
+    }
 
-for (let btn of difficultyBtns) {
-    btn.addEventListener("click", setBotDifficulty);
-}
+    for (let btn of difficultyBtns) {
+        btn.addEventListener("click", setBotDifficulty);
+    }
 
-for (let btn of markBtns) {
-    btn.addEventListener("click", markChosen);
-}
+    for (let btn of markBtns) {
+        btn.addEventListener("click", markChosen);
+    }
 
-for (let btn of modalBtns) { 
-    btn.addEventListener("click", playAgain);
+    for (let btn of modalBtns) { 
+        btn.addEventListener("click", playAgain);
+    }
 }
 
 function playAgain(e) {
@@ -29,6 +31,44 @@ function playAgain(e) {
         modal.hideModal();
         chooseOpponent();
     }
+}
+
+function opponentChosen(e) {
+    hideBtns(opponentBtns);
+    if (e.target.id == "player") {
+        let playerX = player();
+        playerX.setMark('X');
+        let playerO = player();
+        playerO.setMark('O');
+        gameManager.setPlayers(playerX,playerO);
+        gameManager.vsBot(false);
+        gameManager.startGame();
+        return;
+    }
+    gameManager.vsBot(true);
+    chooseBotDifficulty();
+}
+
+function setBotDifficulty(e) {
+    hideBtns(difficultyBtns);
+    bot.setDifficulty(e.target.id);
+    chooseMark();
+}
+
+function markChosen(e) {
+    hideBtns(markBtns);
+    let mark = e.target.textContent;
+    let newPlayer = player();
+    newPlayer.setMark(mark);
+    if (mark == 'X') {
+        bot.setMark('O');
+        gameManager.setPlayers(newPlayer,bot);
+    } else {
+        bot.setMark('X');
+        gameManager.setPlayers(bot,newPlayer);
+    }
+    
+    gameManager.startGame();
 }
 
 function chooseOpponent() {
@@ -46,68 +86,17 @@ function chooseMark() {
     showBtns(markBtns);
 }
 
-function markChosen(e) {
-    hideBtns(markBtns);
-    let mark = e.target.id
-    let player = player(mark);
-    if (mark == 'X') {
-        bot.setMark('O');
-        gameManager.setPlayers(player,bot);
-    } else {
-        bot.setMark('X')
-        gameManager.setPlayers(bot,player);
+function showBtns(arrayOfBtns) {
+    for (let btn of arrayOfBtns) {
+        btn.classList.remove("hidden");
     }
-    gameManager.startGame();
 }
 
-
-function setBotDifficulty(e) {
-    hideBtns(difficultyBtns);
-    bot.setDifficulty(e.target.id);
-    chooseMark();
+function hideBtns(arrayOfBtns) {
+    for (let btn of arrayOfBtns) {
+        btn.classList.add("hidden");
+    }
 }
-
-function opponentChosen(e) {
-    hideBtns(opponentBtns);
-    if (e.target.id == "player") {
-        let playerX = player('X');
-        let playerO = player('O');
-        gameManager.setPlayers(playerX,playerO);
-        gameManager.startGame();
-        return;
-    }
-    chooseBotDifficulty();
-}
-
-const bot = (() => {
-
-})();
-
-const cell = (id) => {
-    let _marked = false;
-    let _element = document.createElement("div");
-    _element.id = `${id}`;
-    _element.className = "cell";
-
-    const getElement = () => {
-        return _element;
-    }
-
-    const setMarked = (mark) => {
-        _marked = true;
-        _element.textContent = mark;
-    }
-
-    const reset = () => {
-        _marked = false;
-        _element.textContent = '';
-    }
-
-    const isMarked = () => {
-        return _marked;
-    }
-    return {getElement,setMarked,reset,isMarked};
-};
 
 
 const gameBoard = (() => {
@@ -164,56 +153,23 @@ const modal = (() => {
 
 })();
 
+const bot = (() => {
+    let _difficulty = ''
 
+    const proto = player();
 
-
-const player = (mark) => {
-    let _markedCells = [];
-    let _element = document.getElementById(mark);
-
-    const pushCell = (cellIndex) => {
-        _markedCells.push(cellIndex);
-    }
-
-    const reset = () => {
-        _markedCells = [];
-        toWait();
+    const setDifficulty = (string) => {
+        _difficulty = string;
     }
 
     const toPlay = () => {
-        _element.classList.add("playing");
+        proto.toPlay();
+
     }
 
-    const toWait = () => {
-        _element.classList.remove("playing");
-    }
+    return Object.assign({},proto,{setDifficulty,toPlay});
+})();
 
-    const isWinner = (winConditions) => {
-        for (let combination of winConditions) {
-            let winnable = true;
-            for (let index of combination) {
-                if (!_markedCells.includes(index)) winnable = false;
-            }
-            if (!winnable) continue;
-            return true;
-        }
-        return false;
-    }
-
-    return {mark,pushCell,reset,toPlay,toWait,isWinner};
-}
-
-function showBtns(arrayOfBtns) {
-    for (let btn of arrayOfBtns) {
-        btn.classList.remove("hidden");
-    }
-}
-
-function hideBtns(arrayOfBtns) {
-    for (let btn of arrayOfBtns) {
-        btn.classList.add("hidden");
-    }
-}
 
 const gameManager = ((gameBoard,modal) => {
     const _winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
@@ -221,11 +177,16 @@ const gameManager = ((gameBoard,modal) => {
     let _playerX;
     let _playerO;
     let _currPlayer;
+    let _vsBot = false;
 
     const setPlayers = (x,o) => {
         _playerX = x;
         _playerO = o;
     }
+
+    const vsBot = (bool) => {
+        _vsBot = bool;
+    } 
 
     const startGame = () => {
         _element.style.zIndex = 1;
@@ -252,7 +213,7 @@ const gameManager = ((gameBoard,modal) => {
         let index = parseInt(e.target.id);
         if (gameBoard.isMarkedAt(index)) return;
 
-        gameBoard.markCell(index,_currPlayer.mark);
+        gameBoard.markCell(index,_currPlayer.getMark());
         _currPlayer.pushCell(index);
         if(checkBoard()) return;
         playerChange();
@@ -267,7 +228,7 @@ const gameManager = ((gameBoard,modal) => {
     const checkBoard = () => {
         if (_currPlayer.isWinner(_winConditions)) {
             modal.showModal();
-            modal.display(`Player ${_currPlayer.mark} Won!`);
+            modal.display(`Player ${_currPlayer.getMark()} Won!`);
             return true;
         };
         if (gameBoard.isFullyMarked()) {
@@ -278,5 +239,92 @@ const gameManager = ((gameBoard,modal) => {
         return false;
     }
     _element.addEventListener("click", play);
-    return {setPlayers,startGame,resetGame,endGame}
+
+    return {
+        setPlayers,
+        vsBot,
+        startGame,
+        resetGame,
+        endGame}
 })(gameBoard,modal);
+
+
+function player(){
+    let _mark = '';
+    let _markedCells = [];
+    let _element;
+
+    const pushCell = (cellIndex) => {
+        _markedCells.push(cellIndex);
+    }
+
+    const reset = () => {
+        _markedCells = [];
+        toWait();
+    }
+
+    const setMark = (char) => {
+        _mark = char;
+        _element = document.getElementById(_mark);
+    }
+
+    const getMark = () => {
+        return _mark;
+    }
+
+    const toPlay = () => {
+        _element.classList.add("playing");
+    }
+
+    const toWait = () => {
+        _element.classList.remove("playing");
+    }
+
+    const isWinner = (winConditions) => {
+        for (let combination of winConditions) {
+            let winnable = true;
+            for (let index of combination) {
+                if (!_markedCells.includes(index)) winnable = false;
+            }
+            if (!winnable) continue;
+            return true;
+        }
+        return false;
+    }
+
+    return {
+        setMark,
+        getMark,
+        pushCell,
+        reset,
+        toPlay,
+        toWait,
+        isWinner};
+
+}
+
+function cell(id){
+    let _marked = false;
+    let _element = document.createElement("div");
+    _element.id = `${id}`;
+    _element.className = "cell";
+
+    const getElement = () => {
+        return _element;
+    }
+
+    const setMarked = (mark) => {
+        _marked = true;
+        _element.textContent = mark;
+    }
+
+    const reset = () => {
+        _marked = false;
+        _element.textContent = '';
+    }
+
+    const isMarked = () => {
+        return _marked;
+    }
+    return {getElement,setMarked,reset,isMarked};
+}
