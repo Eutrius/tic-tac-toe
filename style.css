@@ -48,7 +48,7 @@ p {
     display: none;
 }
 
-.btn:hover, .small-btn:hover {
+.btn:hover, .modal-btn:hover {
     transform: scale(1.1);
 }
 

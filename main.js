@@ -77,7 +77,7 @@ function chooseOpponent() {
 }
 
 function chooseBotDifficulty() {
-    menuLabel.textContent = "Set Bot Difficulty:";
+    menuLabel.textContent = "Set AI Difficulty:";
     showBtns(difficultyBtns);
 }
 
@@ -101,36 +101,93 @@ function hideBtns(arrayOfBtns) {
 
 const gameBoard = (() => {
     let _boardCells = [];
+    let _boardState = [];
     let _element = document.getElementById("board");
 
     for (let i = 0; i < 9; i++) {
         let tempCell = cell(i);
+        _boardState.push('');
         _boardCells.push(tempCell);
         _element.appendChild(tempCell.getElement());
     }
 
     const reset = () => {
-        for (let cell of _boardCells) {
-            cell.reset();
+        for (let i = 0; i <= _boardState.length -1; i++){
+            _boardCells[i].reset();
+            _boardState[i] = '';
         }
     }
 
-    const markCell = (index, mark) => {
-        _boardCells[index].setMarked(mark);
+    const getBoardCells = () => {
+        return _boardCells;
+    }
+
+    const getBoardState = () => {
+        return _boardState;
+    }
+
+    const markCellAt = (index, mark) => {
+        _boardState[index] = mark;
+        targetCell = _boardCells[index];
+        targetCell.updateDisplay(mark);
+        
     }
 
     const isMarkedAt = (index) => {
-        return _boardCells[index].isMarked();
+        if(_boardState[index] != '') return true;
+        return false;
     }
 
-    const isFullyMarked = () => {
-        for (let cell of _boardCells) {
-            if (!cell.isMarked()) return false;
+    const playerWon = (player,winConditions) => {
+        for (let combination of winConditions) {
+            let winnable = true;
+            for (let index of combination) {
+                if (!player.includes(index)) winnable = false;
+            }
+            if (!winnable) continue;
+            return true;
+        }
+        return false;
+    }
+
+    const isGameSet = (winConditions,boardState = _boardState) => {
+        let moves = 0;
+        let players = {};
+        for (let i = 0; i <= 8; i++) {
+            if (boardState[i] != '') {
+                if(players[boardState[i]]) {
+                    players[boardState[i]].push(i);
+                } else {
+                    players[boardState[i]] = [i];   
+                }
+                moves++;
+            }
+        } 
+        if (moves < 5) return false;
+        for (let player of Object.entries(players)) {
+            if (playerWon(player[1],winConditions)) return player[0];
+        }
+        return false;
+    }
+
+    const isFullyMarked = (boardState = _boardState) => {
+        for (let cell of boardState) {
+            if (cell == '') return false;
         }
         return true;
     }
 
-    return {reset,markCell,isMarkedAt,isFullyMarked};
+
+
+
+    return {
+        reset,
+        getBoardCells,
+        getBoardState,
+        markCellAt,
+        isGameSet,
+        isMarkedAt,
+        isFullyMarked};
 })();
 
 const modal = (() => {
@@ -153,8 +210,13 @@ const modal = (() => {
 
 })();
 
-const bot = (() => {
+const bot = ((gameBoard) => {
     let _difficulty = ''
+    let _luck = {
+        'easy': 50,
+        'normal': 80,
+        'hard': 90,
+    }
 
     const proto = player();
 
@@ -162,13 +224,102 @@ const bot = (() => {
         _difficulty = string;
     }
 
-    const toPlay = () => {
+    const toPlay = (winConditions) => {
         proto.toPlay();
+        let move;
+        if (generateRandom(95) > _luck[_difficulty]) {
+            move = randomMove();
+        } else {
+            move = bestMove(winConditions);
+            console.log(move);
+        }
+
+        play(move);
 
     }
 
-    return Object.assign({},proto,{setDifficulty,toPlay});
-})();
+    const isBot = () => {
+        return true;
+    }
+
+    const play = (index) => {
+        gameBoard.getBoardCells()[index].getElement().click();
+    }
+
+    const generateRandom = (max) => {
+        return Math.floor(Math.random() * max + 1);
+    }
+
+    const randomMove = () => {
+        let board = gameBoard.getBoardState();
+        let free = [];
+        for (let i = 0; i <= board.length -1; i++){
+            if(board[i] == '') {
+                free.push(i);
+            }
+        }
+        return free[generateRandom(free.length - 1)];
+    }
+    const bestMove = (winConditions) => {
+        let bestScore = -Infinity;
+        let move;
+        let mark = proto.getMark();
+        let enemyMark = proto.getMark() == 'X' ? 'O' : 'X';
+        let board = gameBoard.getBoardState();
+        for (let i = 0; i <= board.length - 1; i++) {
+            if (board[i] == '') {
+                board[i] = mark;
+                let score = minimax(mark,enemyMark,0,false,winConditions,board);
+                board[i] = '';
+                if(score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+        }
+        if (!move) move = randomMove();
+        return move;        
+    }
+
+    const minimax = (mark,enemyMark,depth,isMaximizing,winConditions,board) => {
+        let winner = gameBoard.isGameSet(winConditions,board);
+        if (winner) {
+            if(winner == mark) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        if(gameBoard.isFullyMarked(board)) return 0;
+
+        if(isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i <= board.length - 1; i++) {
+                if (board[i] == '') {
+                    board[i] = mark;
+                    let score = minimax(mark,enemyMark,depth + 1,false,winConditions,board);
+                    board[i] = '';
+                    bestScore = Math.max(score,bestScore);
+                    }
+                }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i <= board.length - 1; i++) {
+                if (board[i] == '') {
+                    board[i] = enemyMark;
+                    let score = minimax(mark,enemyMark,depth + 1,true,winConditions,board);
+                    board[i] = '';
+                    bestScore = Math.min(score,bestScore);
+                    }
+                }
+            return bestScore;
+        }
+    }
+
+
+    return Object.assign({},proto,{setDifficulty,toPlay,isBot});
+})(gameBoard);
 
 
 const gameManager = ((gameBoard,modal) => {
@@ -190,7 +341,12 @@ const gameManager = ((gameBoard,modal) => {
 
     const startGame = () => {
         _element.style.zIndex = 1;
+        _element.addEventListener("click", play);
         _currPlayer = _playerX;
+        if (_currPlayer.isBot()) {
+            _currPlayer.toPlay(_winConditions);
+            return;
+        }
         _currPlayer.toPlay();
     }
 
@@ -198,39 +354,56 @@ const gameManager = ((gameBoard,modal) => {
         gameBoard.reset();
         _playerX.reset();
         _playerO.reset();
-        _currPlayer = _playerX;
-        _currPlayer.toPlay();
+        startGame();
     }
 
     const endGame = () => {
-        resetGame();
+        gameBoard.reset();
+        _playerX = null;
+        _playerO = null;
+        _currPlayer = null;
         _element.style.zIndex = -1;
     }
 
     const play = (e) => {
         if (!e.target.classList.contains("cell")) return;
-
         let index = parseInt(e.target.id);
         if (gameBoard.isMarkedAt(index)) return;
 
-        gameBoard.markCell(index,_currPlayer.getMark());
-        _currPlayer.pushCell(index);
-        if(checkBoard()) return;
+        gameBoard.markCellAt(index,_currPlayer.getMark());
+        if(checkBoard()) {
+            _element.removeEventListener("click",play);
+            return;   
+        }
         playerChange();
     }
 
     const playerChange = () => {
         _currPlayer.toWait();
         _currPlayer = _currPlayer == _playerX ? _playerO : _playerX;
+        if(_vsBot && _currPlayer.isBot()) {
+            _currPlayer.toPlay(_winConditions);
+            return;
+        }
         _currPlayer.toPlay();
     }
 
     const checkBoard = () => {
-        if (_currPlayer.isWinner(_winConditions)) {
+        let winner = gameBoard.isGameSet(_winConditions);
+        if (winner && !_vsBot) {
             modal.showModal();
-            modal.display(`Player ${_currPlayer.getMark()} Won!`);
+            modal.display(`Player ${winner} Won!`);
             return true;
-        };
+        } else if(winner && _vsBot) {
+            modal.showModal();
+            if (_currPlayer.isBot()) {
+                modal.display("You Lost!");
+                return true;
+            } else {
+                modal.display("You Won!");
+                return true;
+            }
+        }
         if (gameBoard.isFullyMarked()) {
             modal.showModal();
             modal.display("It's a Draw!");
@@ -238,28 +411,24 @@ const gameManager = ((gameBoard,modal) => {
         }
         return false;
     }
-    _element.addEventListener("click", play);
 
     return {
         setPlayers,
         vsBot,
+        play,
         startGame,
         resetGame,
-        endGame}
+        endGame
+    }
+
 })(gameBoard,modal);
 
 
 function player(){
     let _mark = '';
-    let _markedCells = [];
     let _element;
 
-    const pushCell = (cellIndex) => {
-        _markedCells.push(cellIndex);
-    }
-
     const reset = () => {
-        _markedCells = [];
         toWait();
     }
 
@@ -280,31 +449,22 @@ function player(){
         _element.classList.remove("playing");
     }
 
-    const isWinner = (winConditions) => {
-        for (let combination of winConditions) {
-            let winnable = true;
-            for (let index of combination) {
-                if (!_markedCells.includes(index)) winnable = false;
-            }
-            if (!winnable) continue;
-            return true;
-        }
+    const isBot = () => {
         return false;
     }
 
     return {
         setMark,
         getMark,
-        pushCell,
         reset,
         toPlay,
         toWait,
-        isWinner};
+        isBot,
+    };
 
 }
 
 function cell(id){
-    let _marked = false;
     let _element = document.createElement("div");
     _element.id = `${id}`;
     _element.className = "cell";
@@ -312,19 +472,17 @@ function cell(id){
     const getElement = () => {
         return _element;
     }
-
-    const setMarked = (mark) => {
-        _marked = true;
+    const updateDisplay = (mark) => {
         _element.textContent = mark;
     }
 
     const reset = () => {
-        _marked = false;
         _element.textContent = '';
     }
 
-    const isMarked = () => {
-        return _marked;
-    }
-    return {getElement,setMarked,reset,isMarked};
+    return {
+        getElement,
+        updateDisplay,
+        reset
+    };
 }
