@@ -25,6 +25,7 @@ const menuLabel = document.getElementById("menu-label");
 function playAgain(e) {
     if(e.target.id == "play-again") {
         gameManager.resetGame();
+        gameManager.startGame();
         modal.hideModal();
     } else {
         gameManager.endGame();
@@ -98,7 +99,6 @@ function hideBtns(arrayOfBtns) {
     }
 }
 
-
 const gameBoard = (() => {
     let _boardCells = [];
     let _boardState = [];
@@ -124,6 +124,16 @@ const gameBoard = (() => {
 
     const getBoardState = () => {
         return _boardState;
+    }
+
+    const getFreeCells = () => {
+        let freeCells = [];
+        for (let i = 0; i < _boardState.length; i++){
+            if(_boardState[i] == '') {
+                freeCells.push(i);
+            }
+        }
+        return freeCells;
     }
 
     const markCellAt = (index, mark) => {
@@ -162,8 +172,7 @@ const gameBoard = (() => {
                 }
                 moves++;
             }
-        } 
-        if (moves < 5) return false;
+        }
         for (let player of Object.entries(players)) {
             if (playerWon(player[1],winConditions)) return player[0];
         }
@@ -184,6 +193,7 @@ const gameBoard = (() => {
         reset,
         getBoardCells,
         getBoardState,
+        getFreeCells,
         markCellAt,
         isGameSet,
         isMarkedAt,
@@ -210,119 +220,7 @@ const modal = (() => {
 
 })();
 
-const bot = ((gameBoard) => {
-    let _difficulty = ''
-    let _luck = {
-        'easy': 50,
-        'normal': 80,
-        'hard': 90,
-    }
-
-    const proto = player();
-
-    const setDifficulty = (string) => {
-        _difficulty = string;
-    }
-
-    const toPlay = (winConditions) => {
-        proto.toPlay();
-        let move;
-        if (generateRandom(95) > _luck[_difficulty]) {
-            move = randomMove();
-        } else {
-            move = bestMove(winConditions);
-            console.log(move);
-        }
-
-        play(move);
-
-    }
-
-    const isBot = () => {
-        return true;
-    }
-
-    const play = (index) => {
-        gameBoard.getBoardCells()[index].getElement().click();
-    }
-
-    const generateRandom = (max) => {
-        return Math.floor(Math.random() * max + 1);
-    }
-
-    const randomMove = () => {
-        let board = gameBoard.getBoardState();
-        let free = [];
-        for (let i = 0; i <= board.length -1; i++){
-            if(board[i] == '') {
-                free.push(i);
-            }
-        }
-        return free[generateRandom(free.length - 1)];
-    }
-    const bestMove = (winConditions) => {
-        let bestScore = -Infinity;
-        let move;
-        let mark = proto.getMark();
-        let enemyMark = proto.getMark() == 'X' ? 'O' : 'X';
-        let board = gameBoard.getBoardState();
-        for (let i = 0; i <= board.length - 1; i++) {
-            if (board[i] == '') {
-                board[i] = mark;
-                let score = minimax(mark,enemyMark,0,false,winConditions,board);
-                board[i] = '';
-                if(score > bestScore) {
-                    bestScore = score;
-                    move = i;
-                }
-            }
-        }
-        if (!move) move = randomMove();
-        return move;        
-    }
-
-    const minimax = (mark,enemyMark,depth,isMaximizing,winConditions,board) => {
-        let winner = gameBoard.isGameSet(winConditions,board);
-        if (winner) {
-            if(winner == mark) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-        if(gameBoard.isFullyMarked(board)) return 0;
-
-        if(isMaximizing) {
-            let bestScore = -Infinity;
-            for (let i = 0; i <= board.length - 1; i++) {
-                if (board[i] == '') {
-                    board[i] = mark;
-                    let score = minimax(mark,enemyMark,depth + 1,false,winConditions,board);
-                    board[i] = '';
-                    bestScore = Math.max(score,bestScore);
-                    }
-                }
-            return bestScore;
-        } else {
-            let bestScore = Infinity;
-            for (let i = 0; i <= board.length - 1; i++) {
-                if (board[i] == '') {
-                    board[i] = enemyMark;
-                    let score = minimax(mark,enemyMark,depth + 1,true,winConditions,board);
-                    board[i] = '';
-                    bestScore = Math.min(score,bestScore);
-                    }
-                }
-            return bestScore;
-        }
-    }
-
-
-    return Object.assign({},proto,{setDifficulty,toPlay,isBot});
-})(gameBoard);
-
-
-const gameManager = ((gameBoard,modal) => {
+const gameManager = (() => {
     const _winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const _element = document.getElementById("game");
     let _playerX;
@@ -354,11 +252,10 @@ const gameManager = ((gameBoard,modal) => {
         gameBoard.reset();
         _playerX.reset();
         _playerO.reset();
-        startGame();
     }
 
     const endGame = () => {
-        gameBoard.reset();
+        resetGame();
         _playerX = null;
         _playerO = null;
         _currPlayer = null;
@@ -421,8 +318,120 @@ const gameManager = ((gameBoard,modal) => {
         endGame
     }
 
-})(gameBoard,modal);
+})();
 
+const bot = (() => {
+    let _difficulty = '';
+
+    const _luck = {
+        'easy': 50,
+        'normal': 80,
+        'hard': 95,
+    }
+
+    const proto = player();
+
+    const setDifficulty = (string) => {
+        _difficulty = string;
+    }
+
+    const toPlay = (winConditions) => {
+        proto.toPlay();
+        let move;
+        if (generateRandom(100) < _luck[_difficulty]) {
+            if (gameBoard.getFreeCells().length == 9) {
+                move = preMove();
+            } else {
+            move = bestMove(winConditions);
+            }
+        }
+        if(move == undefined) move = randomMove();
+        play(move);
+    }
+
+    const isBot = () => {
+        return true;
+    }
+
+    const play = (index) => {
+        gameBoard.getBoardCells()[index].getElement().click();
+    }
+
+    const preMove = () => {
+        let corners = [0,2,6,8];
+        let move = corners[generateRandom(3)];
+        return move;
+    }
+
+    const generateRandom = (max) => {
+        return Math.floor(Math.random() * max + 1);
+    }
+
+    const randomMove = () => {
+        let freeCells = gameBoard.getFreeCells();
+        let move = freeCells[generateRandom(freeCells.length -1)];
+        return move;
+    }
+
+    const bestMove = (winConditions) => {
+        let bestScore = -Infinity;
+        let move;
+        let mark = proto.getMark();
+        let enemyMark = proto.getMark() == 'X' ? 'O' : 'X';
+        let board = gameBoard.getBoardState();
+        for (let i = 0; i <= board.length - 1; i++) {
+            if (board[i] == '') {
+                board[i] = mark;
+                let score = miniMax(mark,enemyMark,0,false,winConditions,board);
+                board[i] = '';
+                if(score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+        }
+        return move;        
+    }
+
+    const miniMax = (mark,enemyMark,depth,isMaximizing,winConditions,board) => {
+        let winner = gameBoard.isGameSet(winConditions,board);
+        if (winner) {
+            if(winner == mark) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        if(gameBoard.isFullyMarked(board)) return 0;
+
+        if(isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i <= board.length - 1; i++) {
+                if (board[i] == '') {
+                    board[i] = mark;
+                    let score = miniMax(mark,enemyMark,depth + 1,false,winConditions,board);
+                    board[i] = '';
+                    bestScore = Math.max(score,bestScore);
+                    }
+                }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i <= board.length - 1; i++) {
+                if (board[i] == '') {
+                    board[i] = enemyMark;
+                    let score = miniMax(mark,enemyMark,depth + 1,true,winConditions,board);
+                    board[i] = '';
+                    bestScore = Math.min(score,bestScore);
+                    }
+                }
+            return bestScore;
+        }
+    }
+
+
+    return Object.assign({},proto,{setDifficulty,toPlay,isBot});
+})();
 
 function player(){
     let _mark = '';
